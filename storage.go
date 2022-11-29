@@ -1,7 +1,7 @@
 package ngram
 
 type Storage interface {
-	IncrementInHashAndToken(hash uint32, id TokenID)
+	IncrementTokenInHashes(hashes []uint32, id TokenID) error
 
-	CountNGrams(inputNgrams []uint32) map[TokenID]int
+	CountNGrams(inputNgrams []uint32) (map[TokenID]int, error)
 }

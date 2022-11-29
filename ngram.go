@@ -132,14 +132,12 @@ func (ngram *NGramIndex) Add(input string, id TokenID) error {
 	if err != nil {
 		return err
 	}
-	for _, hash := range results {
-		ngram.storage.IncrementInHashAndToken(hash, id)
-	}
-	return nil
+
+	return ngram.storage.IncrementTokenInHashes(results, id)
 }
 
 // countNgrams maps matched tokens to the number of ngrams, shared with input string
-func (ngram *NGramIndex) countNgrams(inputNgrams []uint32) map[TokenID]int {
+func (ngram *NGramIndex) countNgrams(inputNgrams []uint32) (map[TokenID]int, error) {
 	return ngram.storage.CountNGrams(inputNgrams)
 }
 
@@ -162,7 +160,10 @@ func (ngram *NGramIndex) match(input string, tval float64) ([]SearchResult, erro
 		return nil, err
 	}
 	output := make([]SearchResult, 0)
-	tokenCount := ngram.countNgrams(inputNgrams)
+	tokenCount, err := ngram.countNgrams(inputNgrams)
+	if err != nil {
+		return nil, err
+	}
 	for token, count := range tokenCount {
 		var sim float64
 		allngrams := float64(len(inputNgrams))
