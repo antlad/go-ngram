@@ -44,58 +44,6 @@ func TestIndexBasics(t *testing.T) {
 	}
 }
 
-//
-//func TestIndexInitialization(t *testing.T) {
-//	index, error := NewNGramIndex()
-//	if error != nil {
-//		t.Error(error)
-//	}
-//	if index.n != defaultN {
-//		t.Error("n is not set to default value")
-//	}
-//	if index.pad != defaultPad {
-//		t.Error("pad is not set to default value")
-//	}
-//	index, error = NewNGramIndex(SetN(4))
-//	if error != nil {
-//		t.Error(error)
-//	}
-//	if index.n != 4 {
-//		t.Error("n is not set to 4")
-//	}
-//	index, error = NewNGramIndex(SetPad('@'))
-//	if error != nil {
-//		t.Error(error)
-//	}
-//	if index.pad != "@" {
-//		t.Error("pad is not set to @")
-//	}
-//	// check off limits
-//	index, error = NewNGramIndex(SetN(1))
-//	if error == nil {
-//		t.Error("Error not set (1)")
-//	}
-//	index, error = NewNGramIndex(SetN(maxN + 1))
-//	if error == nil {
-//		t.Error("Error not set (2)")
-//	}
-//}
-//
-//func BenchmarkAdd(b *testing.B) {
-//	b.StopTimer()
-//	// init
-//	index, _ := NewNGramIndex()
-//	var arr []string
-//	for i := 0; i < 10000; i++ {
-//		str := fmt.Sprintf("%x", i)
-//		arr = append(arr, str)
-//	}
-//	b.StartTimer()
-//	for _, hexstr := range arr {
-//		index.Add(hexstr)
-//	}
-//}
-//
 func TestSearch(t *testing.T) {
 
 	// init
