@@ -20,10 +20,10 @@ type nGramValue map[TokenID]int
 
 // NGramIndex can be initialized by default (zeroed) or created with "NewNgramIndex"
 type NGramIndex struct {
-	pad   string
-	n     int
-	index map[uint32]nGramValue
-	warp  float64
+	pad     string
+	n       int
+	storage Storage
+	warp    float64
 }
 
 // SearchResult contains token id and similarity - value in range from 0.0 to 1.0
@@ -67,7 +67,6 @@ func (ngram *NGramIndex) splitInput(str string) ([]uint32, error) {
 }
 
 func (ngram *NGramIndex) init() {
-	ngram.index = make(map[uint32]nGramValue)
 	if ngram.pad == "" {
 		ngram.pad = defaultPad
 	}
@@ -113,8 +112,10 @@ func SetWarp(warp float64) Option {
 
 // NewNGramIndex is N-gram index c-tor. In most cases must be used withot parameters.
 // You can pass parameters to c-tor using functions SetPad, SetWarp and SetN.
-func NewNGramIndex(opts ...Option) (*NGramIndex, error) {
-	ngram := new(NGramIndex)
+func NewNGramIndex(storage Storage, opts ...Option) (*NGramIndex, error) {
+	ngram := &NGramIndex{
+		storage: storage,
+	}
 	for _, opt := range opts {
 		if err := opt(ngram); err != nil {
 			return nil, err
@@ -127,33 +128,19 @@ func NewNGramIndex(opts ...Option) (*NGramIndex, error) {
 // Add token to index. Function returns token id, this id can be converted
 // to string with function "GetString".
 func (ngram *NGramIndex) Add(input string, id TokenID) error {
-	if ngram.index == nil {
-		ngram.init()
-	}
 	results, err := ngram.splitInput(input)
 	if err != nil {
 		return err
 	}
 	for _, hash := range results {
-
-		if ngram.index[hash] == nil {
-			ngram.index[hash] = make(map[TokenID]int)
-		}
-		// insert string and counter
-		ngram.index[hash][id]++
+		ngram.storage.IncrementInHashAndToken(hash, id)
 	}
 	return nil
 }
 
 // countNgrams maps matched tokens to the number of ngrams, shared with input string
 func (ngram *NGramIndex) countNgrams(inputNgrams []uint32) map[TokenID]int {
-	counters := make(map[TokenID]int)
-	for _, ngramHash := range inputNgrams {
-		for tok := range ngram.index[ngramHash] {
-			counters[tok]++
-		}
-	}
-	return counters
+	return ngram.storage.CountNGrams(inputNgrams)
 }
 
 func validateThresholdValues(thresholds []float64) (float64, error) {
@@ -170,9 +157,9 @@ func validateThresholdValues(thresholds []float64) (float64, error) {
 }
 
 func (ngram *NGramIndex) match(input string, tval float64) ([]SearchResult, error) {
-	inputNgrams, error := ngram.splitInput(input)
-	if error != nil {
-		return nil, error
+	inputNgrams, err := ngram.splitInput(input)
+	if err != nil {
+		return nil, err
 	}
 	output := make([]SearchResult, 0)
 	tokenCount := ngram.countNgrams(inputNgrams)
@@ -201,28 +188,22 @@ func (ngram *NGramIndex) match(input string, tval float64) ([]SearchResult, erro
 // Results is an unordered array of 'SearchResult' structs. This struct contains similarity
 // value (float32 value from threshold to 1.0) and token-id.
 func (ngram *NGramIndex) Search(input string, threshold ...float64) ([]SearchResult, error) {
-	if ngram.index == nil {
-		ngram.init()
-	}
-	tval, error := validateThresholdValues(threshold)
-	if error != nil {
-		return nil, error
+	tval, err := validateThresholdValues(threshold)
+	if err != nil {
+		return nil, err
 	}
 	return ngram.match(input, tval)
 }
 
 // BestMatch is the same as Search except that it's returning only one best result instead of all.
 func (ngram *NGramIndex) BestMatch(input string, threshold ...float64) (*SearchResult, error) {
-	if ngram.index == nil {
-		ngram.init()
+	tval, err := validateThresholdValues(threshold)
+	if err != nil {
+		return nil, err
 	}
-	tval, error := validateThresholdValues(threshold)
-	if error != nil {
-		return nil, error
-	}
-	variants, error := ngram.match(input, tval)
-	if error != nil {
-		return nil, error
+	variants, err := ngram.match(input, tval)
+	if err != nil {
+		return nil, err
 	}
 	if len(variants) == 0 {
 		return nil, errors.New("no matches found")
