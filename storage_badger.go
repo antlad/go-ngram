@@ -69,6 +69,7 @@ func (m *BadgerStorage) IncrementTokenInHashes(hashes []uint32, id TokenID) erro
 					if err = txn.Set(k, value(1)); err != nil {
 						return err
 					}
+					continue
 				}
 				return err
 			}
