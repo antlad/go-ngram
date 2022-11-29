@@ -2,10 +2,9 @@ package ngram
 
 import (
 	"errors"
-	"math"
-	"sync"
-
+	uuid "github.com/satori/go.uuid"
 	"github.com/spaolacci/murmur3"
+	"math"
 )
 
 const (
@@ -15,7 +14,7 @@ const (
 )
 
 // TokenID is just id of the token
-type TokenID int
+type TokenID uuid.UUID
 
 type nGramValue map[TokenID]int
 
@@ -23,11 +22,8 @@ type nGramValue map[TokenID]int
 type NGramIndex struct {
 	pad   string
 	n     int
-	spool stringPool
 	index map[uint32]nGramValue
 	warp  float64
-
-	sync.RWMutex
 }
 
 // SearchResult contains token id and similarity - value in range from 0.0 to 1.0
@@ -71,9 +67,6 @@ func (ngram *NGramIndex) splitInput(str string) ([]uint32, error) {
 }
 
 func (ngram *NGramIndex) init() {
-	ngram.Lock()
-	defer ngram.Unlock()
-
 	ngram.index = make(map[uint32]nGramValue)
 	if ngram.pad == "" {
 		ngram.pad = defaultPad
@@ -133,44 +126,32 @@ func NewNGramIndex(opts ...Option) (*NGramIndex, error) {
 
 // Add token to index. Function returns token id, this id can be converted
 // to string with function "GetString".
-func (ngram *NGramIndex) Add(input string) (TokenID, error) {
+func (ngram *NGramIndex) Add(input string, id TokenID) error {
 	if ngram.index == nil {
 		ngram.init()
 	}
-	results, error := ngram.splitInput(input)
-	if error != nil {
-		return -1, error
-	}
-	ixstr, error := ngram.spool.Append(input)
-	if error != nil {
-		return -1, error
+	results, err := ngram.splitInput(input)
+	if err != nil {
+		return err
 	}
 	for _, hash := range results {
-		ngram.Lock()
+
 		if ngram.index[hash] == nil {
 			ngram.index[hash] = make(map[TokenID]int)
 		}
 		// insert string and counter
-		ngram.index[hash][ixstr]++
-		ngram.Unlock()
+		ngram.index[hash][id]++
 	}
-	return ixstr, nil
-}
-
-// GetString converts token-id to string.
-func (ngram *NGramIndex) GetString(id TokenID) (string, error) {
-	return ngram.spool.ReadAt(id)
+	return nil
 }
 
 // countNgrams maps matched tokens to the number of ngrams, shared with input string
 func (ngram *NGramIndex) countNgrams(inputNgrams []uint32) map[TokenID]int {
 	counters := make(map[TokenID]int)
 	for _, ngramHash := range inputNgrams {
-		ngram.RLock()
 		for tok := range ngram.index[ngramHash] {
 			counters[tok]++
 		}
-		ngram.RUnlock()
 	}
 	return counters
 }
