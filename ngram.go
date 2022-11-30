@@ -13,7 +13,7 @@ const (
 )
 
 // TokenID is just id of the token
-type TokenID int
+type TokenID uint32
 
 type nGramValue map[TokenID]int
 
