@@ -36,21 +36,10 @@ func hashPrefix(hash uint32) []byte {
 	return b
 }
 
-func NewBadgerStorage(badgerFolder string) (*BadgerStorage, error) {
-	opts := badger.DefaultOptions(badgerFolder)
-	opts.NumVersionsToKeep = 0
-	opts.CompactL0OnClose = true
-	opts.NumLevelZeroTables = 1
-	opts.NumLevelZeroTablesStall = 2
-	opts.ValueLogFileSize = 1024 * 1024 * 10
-
-	db, err := badger.Open(opts)
-	if err != nil {
-		return nil, err
-	}
+func NewBadgerStorage(db *badger.DB) *BadgerStorage {
 	return &BadgerStorage{
 		db: db,
-	}, nil
+	}
 }
 
 func iteratorOptsOnPrefix(prefix []byte) badger.IteratorOptions {

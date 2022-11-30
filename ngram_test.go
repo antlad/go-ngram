@@ -2,6 +2,8 @@ package ngram
 
 import (
 	"fmt"
+	"github.com/dgraph-io/badger/v3"
+	"github.com/dgraph-io/badger/v3/options"
 	uuid "github.com/satori/go.uuid"
 	"github.com/stretchr/testify/require"
 	"log"
@@ -17,9 +19,26 @@ func newIndex(t *testing.T) *NGramIndex {
 	if err != nil {
 		log.Fatal(err)
 	}
-	st, err := NewBadgerStorage(path)
+	ops := badger.DefaultOptions(path)
+	ops.Compression = options.None
+	ops.NumVersionsToKeep = 0
+	ops.CompactL0OnClose = true
+	ops.NumLevelZeroTables = 1
+	ops.NumLevelZeroTablesStall = 2
+	ops.ValueLogFileSize = 1024 * 1024 * 10
+
+	// low memory consumption mode
+	ops.MemTableSize = 1 << 20
+	ops.ValueThreshold = 32
+	ops.NumMemtables = 1
+	ops.InMemory = false
+	ops.NumLevelZeroTables = 1
+	ops.NumLevelZeroTablesStall = 2
+	ops.SyncWrites = false
+
+	db, err := badger.Open(ops)
 	require.NoError(t, err)
-	index, err := NewNGramIndex(st)
+	index, err := NewNGramIndex(NewBadgerStorage(db))
 	require.NoError(t, err)
 	return index
 }
