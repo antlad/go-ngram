@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/dgraph-io/badger/v3 v3.2103.4
+	github.com/emirpasic/gods v1.18.1
 	github.com/satori/go.uuid v1.2.0
 	github.com/spaolacci/murmur3 v1.1.0
 	github.com/stretchr/testify v1.4.0

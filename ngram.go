@@ -2,7 +2,6 @@ package ngram
 
 import (
 	"errors"
-	uuid "github.com/satori/go.uuid"
 	"github.com/spaolacci/murmur3"
 	"math"
 )
@@ -14,7 +13,7 @@ const (
 )
 
 // TokenID is just id of the token
-type TokenID uuid.UUID
+type TokenID int
 
 type nGramValue map[TokenID]int
 
